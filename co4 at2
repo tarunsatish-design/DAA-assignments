@@ -1,0 +1,114 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Structure to represent a smart appliance
+typedef struct {
+    char name[30];
+    int power;    // Power consumption in Watts
+    int priority; // User preference (value)
+    float ratio;  // Priority-to-Power ratio for Greedy
+} Appliance;
+
+// Comparator for Greedy (sort by Priority/Power ratio descending)
+int compare(const void *a, const void *b) {
+    Appliance *appA = (Appliance *)a;
+    Appliance *appB = (Appliance *)b;
+    if (appA->ratio < appB->ratio) return 1;
+    if (appA->ratio > appB->ratio) return -1;
+    return 0;
+}
+
+// 1. GREEDY APPROACH
+void greedy_optimization(Appliance apps[], int n, int max_power) {
+    // Calculate ratios
+    for (int i = 0; i < n; i++) {
+        apps[i].ratio = (float)apps[i].priority / apps[i].power;
+    }
+    
+    // Sort appliances based on ratio
+    qsort(apps, n, sizeof(Appliance), compare);
+
+    int current_power = 0;
+    int total_priority = 0;
+
+    printf("--- Greedy Selection ---\n");
+    for (int i = 0; i < n; i++) {
+        if (current_power + apps[i].power <= max_power) {
+            current_power += apps[i].power;
+            total_priority += apps[i].priority;
+            printf("Turn ON : %s (Power: %dW, Priority: %d)\n", apps[i].name, apps[i].power, apps[i].priority);
+        }
+    }
+    printf("Total Priority: %d | Power Used: %dW / %dW\n\n", total_priority, current_power, max_power);
+}
+
+// 2. DYNAMIC PROGRAMMING APPROACH (0/1 Knapsack)
+// Utility to find maximum of two integers
+int max(int a, int b) { return (a > b) ? a : b; }
+
+void dp_optimization(Appliance apps[], int n, int max_power) {
+    // Allocate a 2D DP table: dp[n+1][max_power+1]
+    int **dp = (int **)malloc((n + 1) * sizeof(int *));
+    for (int i = 0; i <= n; i++) {
+        dp[i] = (int *)malloc((max_power + 1) * sizeof(int));
+    }
+
+    // Build table in bottom-up manner
+    for (int i = 0; i <= n; i++) {
+        for (int w = 0; w <= max_power; w++) {
+            if (i == 0 || w == 0) {
+                dp[i][w] = 0;
+            } else if (apps[i - 1].power <= w) {
+                dp[i][w] = max(apps[i - 1].priority + dp[i - 1][w - apps[i - 1].power], dp[i - 1][w]);
+            } else {
+                dp[i][w] = dp[i - 1][w];
+            }
+        }
+    }
+
+    int total_priority = dp[n][max_power];
+    int current_power = 0;
+    
+    printf("--- Dynamic Programming Selection ---\n");
+    
+    // Backtrack to find which appliances were selected
+    int w = max_power;
+    for (int i = n; i > 0 && total_priority > 0; i--) {
+        if (total_priority != dp[i - 1][w]) {
+            printf("Turn ON : %s (Power: %dW, Priority: %d)\n", apps[i - 1].name, apps[i - 1].power, apps[i - 1].priority);
+            total_priority -= apps[i - 1].priority;
+            current_power += apps[i - 1].power;
+            w -= apps[i - 1].power;
+        }
+    }
+    printf("Total Priority: %d | Power Used: %dW / %dW\n", dp[n][max_power], current_power, max_power);
+
+    // Free memory
+    for (int i = 0; i <= n; i++) free(dp[i]);
+    free(dp);
+}
+
+int main() {
+    int max_power_limit = 2500; // Simulated peak-hour constraint in Watts
+
+    // Array of smart home appliances
+    Appliance devices[] = {
+        {"Refrigerator", 800, 100, 0},
+        {"HVAC System", 1500, 80, 0},
+        {"Washing Machine", 1000, 40, 0},
+        {"Smart Lights", 200, 50, 0},
+        {"Pool Pump", 1200, 30, 0}
+    };
+    
+    int n = sizeof(devices) / sizeof(devices[0]);
+
+    printf("=== Smart Home Energy Optimizer ===\n");
+    printf("Peak Hour Power Limit: %dW\n\n", max_power_limit);
+
+    // Run both optimizations to compare
+    greedy_optimization(devices, n, max_power_limit);
+    dp_optimization(devices, n, max_power_limit);
+
+    return 0;
+}
