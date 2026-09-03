@@ -1,0 +1,52 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Structure to represent a pair
+typedef struct {
+    int start;
+    int end;
+} Pair;
+
+// Comparator function to sort pairs based on their end values
+int compare(const void *a, const void *b) {
+    return (((Pair *)a)->end - (((Pair *)b)->end));
+}
+
+// Function to find the maximum length chain
+int maxChainLength(Pair arr[], int n) {
+    if (n == 0) return 0;
+
+    // Step 1: Sort the pairs based on end values
+    qsort(arr, n, sizeof(Pair), compare);
+
+    // Step 2: Initialize variables
+    int max_len = 1; // The first sorted pair is always selected
+    int current_end = arr[0].end;
+
+    // Step 3: Iterate through the remaining pairs
+    for (int i = 1; i < n; i++) {
+        // If the start of the current pair is strictly greater than 
+        // the end of the previously selected pair, chain it.
+        if (arr[i].start > current_end) {
+            max_len++;
+            current_end = arr[i].end; // Update the end value
+        }
+    }
+
+    return max_len;
+}
+
+int main() {
+    // Sample Input
+    int n = 3;
+    Pair pairs[] = {{5, 24}, {15, 25}, {27, 40}};
+    
+    printf("--- Maximum Length Chain of Pairs ---\n");
+    printf("Number of pairs: %d\n", n);
+    
+    int result = maxChainLength(pairs, n);
+    
+    printf("Max Chain Length = %d\n", result);
+    
+    return 0;
+}
