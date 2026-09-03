@@ -1,0 +1,67 @@
+#include <stdio.h>
+#include <limits.h>
+#include <stdlib.h>
+
+// Utility function to find the minimum of two integers
+int min(int a, int b) {
+    return (a < b) ? a : b;
+}
+
+// 1. GREEDY APPROACH
+int coin_change_greedy(int coins[], int n, int target) {
+    int count = 0;
+    // Assuming coins are sorted in descending order for Greedy
+    for (int i = 0; i < n; i++) {
+        while (target >= coins[i]) {
+            target -= coins[i];
+            count++;
+        }
+        if (target == 0) break;
+    }
+    return count;
+}
+
+// 2. DYNAMIC PROGRAMMING APPROACH
+int coin_change_dp(int coins[], int n, int target) {
+    int* dp = (int*)malloc((target + 1) * sizeof(int));
+    
+    // Initialize the DP table with "infinity"
+    dp[0] = 0;
+    for (int i = 1; i <= target; i++) {
+        dp[i] = INT_MAX - 1; 
+    }
+
+    // Build the table in a bottom-up manner
+    for (int i = 1; i <= target; i++) {
+        for (int j = 0; j < n; j++) {
+            if (coins[j] <= i) {
+                dp[i] = min(dp[i], dp[i - coins[j]] + 1);
+            }
+        }
+    }
+    
+    int result = dp[target];
+    free(dp);
+    return result;
+}
+
+int main() {
+    // A non-canonical coin set to demonstrate the Greedy failure
+    int coins_desc[] = {4, 3, 1}; // Sorted for Greedy
+    int coins_asc[] = {1, 3, 4};  // Standard for DP
+    int n = 3;
+    int target = 6;
+
+    printf("--- DP vs Greedy: Coin Change Problem ---\n");
+    printf("Coins available: {1, 3, 4} | Target Value: %d\n\n", target);
+
+    // Run Greedy
+    int greedy_result = coin_change_greedy(coins_desc, n, target);
+    printf("Greedy Algorithm Result : %d coins (e.g., 4 + 1 + 1)\n", greedy_result);
+
+    // Run DP
+    int dp_result = coin_change_dp(coins_asc, n, target);
+    printf("Dynamic Prog. Result    : %d coins (e.g., 3 + 3)\n", dp_result);
+
+    return 0;
+}
