@@ -1,0 +1,90 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define N 256 // Matrix size (must be a power of 2 for standard D&C)
+
+// Iterative matrix multiplication for the base case
+void multiply_iterative(int** A, int** B, int** C, int rowA, int colA, int rowB, int colB, int size) {
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            for (int k = 0; k < size; k++) {
+                C[rowA + i][colB + j] += A[rowA + i][colA + k] * B[rowB + k][colB + j];
+            }
+        }
+    }
+}
+
+// Recursive Divide and Conquer matrix multiplication
+void multiply_dc(int** A, int** B, int** C, int rowA, int colA, int rowB, int colB, int size, int threshold) {
+    if (size <= threshold) {
+        multiply_iterative(A, B, C, rowA, colA, rowB, colB, size);
+        return;
+    }
+
+    int newSize = size / 2;
+
+    // C11
+    multiply_dc(A, B, C, rowA, colA, rowB, colB, newSize, threshold);
+    multiply_dc(A, B, C, rowA, colA + newSize, rowB + newSize, colB, newSize, threshold);
+    // C12
+    multiply_dc(A, B, C, rowA, colA, rowB, colB + newSize, newSize, threshold);
+    multiply_dc(A, B, C, rowA, colA + newSize, rowB + newSize, colB + newSize, newSize, threshold);
+    // C21
+    multiply_dc(A, B, C, rowA + newSize, colA, rowB, colB, newSize, threshold);
+    multiply_dc(A, B, C, rowA + newSize, colA + newSize, rowB + newSize, colB, newSize, threshold);
+    // C22
+    multiply_dc(A, B, C, rowA + newSize, colA, rowB, colB + newSize, newSize, threshold);
+    multiply_dc(A, B, C, rowA + newSize, colA + newSize, rowB + newSize, colB + newSize, newSize, threshold);
+}
+
+// Utility to allocate a matrix
+int** allocate_matrix(int size) {
+    int** mat = (int**)malloc(size * sizeof(int*));
+    for (int i = 0; i < size; i++) {
+        mat[i] = (int*)malloc(size * sizeof(int));
+    }
+    return mat;
+}
+
+// Utility to reset matrix C to 0
+void reset_matrix(int** mat, int size) {
+    for(int i=0; i<size; i++) {
+        for(int j=0; j<size; j++) {
+            mat[i][j] = 0;
+        }
+    }
+}
+
+int main() {
+    int** A = allocate_matrix(N);
+    int** B = allocate_matrix(N);
+    int** C = allocate_matrix(N);
+
+    // Populate matrices with dummy data
+    for(int i=0; i<N; i++) {
+        for(int j=0; j<N; j++) {
+            A[i][j] = rand() % 10;
+            B[i][j] = rand() % 10;
+        }
+    }
+
+    printf("--- Evaluating D&C Matrix Multiplication (Size %dx%d) ---\n\n", N, N);
+    
+    // Array of thresholds to test
+    int thresholds[] = {2, 4, 8, 16, 32, 64, 128, 256};
+    int num_tests = sizeof(thresholds) / sizeof(thresholds[0]);
+
+    for (int i = 0; i < num_tests; i++) {
+        reset_matrix(C, N);
+        
+        clock_t start = clock();
+        multiply_dc(A, B, C, 0, 0, 0, 0, N, thresholds[i]);
+        clock_t end = clock();
+        
+        double time_taken = ((double)(end - start)) / CLOCKS_PER_SEC;
+        printf("Threshold %3d | Execution Time: %f seconds\n", thresholds[i], time_taken);
+    }
+
+    return 0;
+}
