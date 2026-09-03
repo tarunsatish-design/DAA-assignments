@@ -1,0 +1,62 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Comparator for qsort to ensure the array is sorted
+int compare(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
+
+// Backtracking function
+void findCombinations(int* candidates, int num_candidates, int remaining_target, int start_index, int* current_combination, int current_size) {
+    // Base case: Target reached
+    if (remaining_target == 0) {
+        printf("[ ");
+        for (int i = 0; i < current_size; i++) {
+            printf("%d ", current_combination[i]);
+        }
+        printf("]\n");
+        return;
+    }
+
+    for (int i = start_index; i < num_candidates; i++) {
+        // Pruning: if current candidate exceeds remaining target, stop exploring this branch
+        if (candidates[i] > remaining_target) {
+            break; 
+        }
+
+        // Avoid duplicates: skip if this candidate is the same as the previous one at this depth
+        if (i > start_index && candidates[i] == candidates[i - 1]) {
+            continue;
+        }
+
+        // Choose
+        current_combination[current_size] = candidates[i];
+
+        // Explore (i + 1 ensures we don't reuse the exact same element index)
+        findCombinations(candidates, num_candidates, remaining_target - candidates[i], i + 1, current_combination, current_size + 1);
+
+        // Backtrack is implicit because we overwrite current_combination[current_size] in the next loop iteration
+    }
+}
+
+int main() {
+    int candidates[] = {10, 1, 2, 7, 6, 1, 5};
+    int target = 8;
+    int n = sizeof(candidates) / sizeof(candidates[0]);
+
+    printf("--- Target Sum Combination Generator ---\n");
+    printf("Target Sum: %d\n\n", target);
+    printf("Valid Combinations:\n");
+
+    // Step 1: Sort the array
+    qsort(candidates, n, sizeof(int), compare);
+
+    // Array to hold the current combination path
+    int* current_combination = (int*)malloc(n * sizeof(int));
+
+    // Step 2: Start backtracking
+    findCombinations(candidates, n, target, 0, current_combination, 0);
+
+    free(current_combination);
+    return 0;
+}
